@@ -1,10 +1,10 @@
 from lxml import html
 from bs4 import BeautifulSoup
+import re
 
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
-
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -13,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from random import randint
 from time import sleep
+from numpy import nan
 import os
 
 class Driver:
@@ -61,7 +62,7 @@ class Driver:
 
         return element
     
-    def get_element_list(self, xpath:str, time=20, click:int=False):
+    def get_element_list(self, xpath:str, time=20, element_number_click:int=None, click_all=False):
         elements = None
         try:
             elements = (WebDriverWait(self.driver,time)
@@ -69,8 +70,12 @@ class Driver:
         except:
             return elements
 
-        if click is not False:
-            elements[click].click()
+        if element_number_click is not None:
+            elements[element_number_click].click()
+
+        if click_all is not False:
+            for element in elements:
+                element.click()
 
         return elements
     
@@ -91,37 +96,118 @@ class Driver:
         # clicar no botão entrar
         self.get_element('//button[@value=1]', click=True)
 
+    def go_to_element(self, xpath_list:list=None, time=10, tries=5, tries_count=0):
+        # ir para o elemento, caso esteja disponivel no html
+        elements = self.get_element_list(xpath_list, time)
+
+        if elements is not None:
+            for element in elements:
+                self.driver.execute_script("arguments[0].scrollIntoView();", element)
+                return 'Elemento encontrado'
+
+        # caso contrário, rolar a tela para baixo e executar novamente a função
+        tries_count += 1
+        if tries_count == tries:
+            return 'Elemento não encontrado'
+
+        self.driver.execute_script("window.scrollBy(0, 200);")
+        sleep(randint(2,4))
+        self.go_to_element(xpath_list, time, tries, tries_count)
+
+
+    def go_to_html_head(self):
+        self.driver.execute_script("window.scrollTo(0, 0);")
+
     def get_page_html(self):
         return self.driver.page_source
+
     
 class Scraper(Driver):
+
+    # funções para integração do chrome com o html
     def __init__(self):
         super().__init__()
         self.html = None
         self.soup = None
         self.structure = None
         self.posts = {} # ex: 'janeiro': [post(id=1), post(id=2)...]
+        self.xpaths = {'facebook_post_text': '/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{id}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span/div/div',
+                       'facebook_reels_text': '/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{id}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[2]/div/div[1]/div/a/div[1]/div[2]/div/div/div[2]/span//div',
+                       'facebook_reels_date': '/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{id}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[2]/div/div[1]/div/a/div[1]/div[3]/div/div/div[1]/div/div/div[2]/div/div[2]/span/span/span/span[2]'
+        }
 
     def renew_html(self):
         self.html = super().get_page_html()
         self.soup = BeautifulSoup(self.html, 'html.parser')
         self.structure = html.fromstring(str(self.soup))
 
-    def get_post_text(self, id):
+    # funções de regex para tratamento de texto
+    def remove_emoji(self, text:str):
+    # Regex para identificar emojis com base nos intervalos Unicode
+        emoji_pattern = re.compile(
+            "["
+            u"\U0001F600-\U0001F64F"  # emoticons
+            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            u"\U00002500-\U00002BEF"  # chinese char
+            u"\U00002702-\U000027B0"
+            u"\U00002702-\U000027B0"
+            u"\U000024C2-\U0001F251"
+            u"\U0001f926-\U0001f937"
+            u"\U00010000-\U0010ffff"
+            u"\u2640-\u2642"
+            u"\u2600-\u2B55"
+            u"\u200c"
+            u"\u200d"
+            u"\u23cf"
+            u"\u23e9"
+            u"\u231a"
+            u"\ufe0f"  # dingbats
+            u"\u3030"
+            "]+", flags=re.UNICODE
+        )
+        
+        return emoji_pattern.sub(r'', text)
+
+
+    # funções para coletar os elementos do post
+    def get_text(self, id):
         # função para conseguir o texto do post
         self.renew_html()
 
-        # Encontrar texto pelo xpath
-        base_xpath = f'/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{id}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span'
+        self.go_to_element([
+            self.xpaths['facebook_post_text'].format(id=id),
+            self.xpaths['facebook_reels_text'].format(id=id)
+            ])
+        
+        self.get_element_list('//div[text()="Ver mais"]', element_number_click=0)
 
-        texts = [text.text_content() for text in self.structure.xpath(base_xpath + '/div/div') + self.structure.xpath(base_xpath + '/div/div/span') 
-                 if type(text.text) == str]
+        sleep(randint(2,4))
 
-        full_text = " ".join(texts).replace('\u200c', '')
+        self.renew_html() # pois clicou em ver mais e alterou o texto
 
-        return full_text
+        # Encontrar texto pelo xpath (caminho de um post normal de facebook)
+        elements = list(dict.fromkeys(self.structure.xpath(self.xpaths['facebook_post_text'].format(id=id))))
 
-    def get_post_number_by_month(self, month):
+        if len(elements) == 0: # se o elemento for um reel no facebook
+            elements = list(dict.fromkeys(self.structure.xpath(self.xpaths['facebook_reels_text'].format(id=id))))
+
+        if len(elements) > 0:
+
+            texts = [element.text_content().rstrip().lstrip() for element in elements]
+
+            full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
+
+            return full_text
+        
+        else:
+            return nan
+        
+    def get_img_type(self):
+        pass
+
+    def get_post_length_by_month(self, month):
         # função para verificar quantos posts existem naquele mês
 
         # Passo 1: descer a página até o ultimo post daquele mês
@@ -144,5 +230,5 @@ class Post:
         self.shares = None
         self.comments = []
         
-    def __repr__(self) -> str:
+    def __repr__(self) -> str: # ao retornar o post como string
         pass
