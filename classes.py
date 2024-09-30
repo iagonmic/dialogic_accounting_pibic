@@ -111,14 +111,13 @@ class Driver:
         self.get_element('//button[@value=1]', click=True)
 
 
-    def go_to_element(self, xpath_list:list=None, time=10, tries=10, tries_count=0):
+    def go_to_element(self, xpath_list:list=None, time=5, tries=10, tries_count=0):
         # ir para o elemento, caso esteja disponivel no html
         elements = self.get_element_list(xpath_list, time)
 
         if elements is not None:
             for element in elements:
-                sleep(2)
-                ActionChains(self.driver).move_to_element(element).perform()
+                ActionChains(self.driver).scroll_to_element(element).perform()
                 sleep(randint(2,4))
                 return 'Elemento encontrado'
 
@@ -140,8 +139,10 @@ class Driver:
     
     def click_vermais(self, position_change=False):
         position_before = self.driver.execute_script("return [window.pageXOffset, window.pageYOffset];")
-        self.get_element_list('//div[text()="Ver mais"]', element_number_click=0)
+        
+        self.get_element_list('//div[text()="Ver mais"]', time=5, element_number_click=0)
         sleep(randint(2,4))
+        
         if position_change is not True:
             self.driver.execute_script("window.scrollTo(arguments[0], arguments[1]);", position_before[0], position_before[1])
 
@@ -223,16 +224,9 @@ class Scraper(Driver):
             full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
 
             if "… Ver mais" in full_text:
-                print('ver mais identificado')
-                self.driver.execute_script("window.scrollBy(0, 500);")
-                self.click_vermais()
-                # caso veja o ver mais, rolar para cima e tentar novamente
-                try:
-                    self.driver.execute_script("window.scrollBy(0, 500);")
-                except:
-                    self.driver.execute_script("window.scrollTo(0, 0);")
-
+                self.driver.execute_script("window.scrollBy(0, 300);")
                 sleep(randint(2,4))
+                self.click_vermais(position_change=True)
                 
                 self.get_text(id)
 
