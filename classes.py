@@ -227,8 +227,22 @@ class Scraper(Driver):
                 self.driver.execute_script("window.scrollBy(0, 300);")
                 sleep(randint(2,4))
                 self.click_vermais(position_change=True)
+
+                sleep(randint(2,4))
+                self.renew_html()
+
+                elements = list(dict.fromkeys(self.structure.xpath(self.xpaths['facebook_post_text'].format(id=id))))
+
+                if len(elements) == 0: # se o elemento for um reel no facebook
+                    elements = list(dict.fromkeys(self.structure.xpath(self.xpaths['facebook_reels_text'].format(id=id))))
+
+                if len(elements) > 0:
+
+                    texts = [element.text_content().rstrip().lstrip() for element in elements]
+
+                    full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
                 
-                self.get_text(id)
+                    return full_text
 
             return full_text
         
