@@ -102,8 +102,13 @@ class Scraper(Driver):
         self.structure = None
         self.posts = {} # ex: 'janeiro': [post(id=1), post(id=2)...]
 
+    def renew_html(self):
+        self.html = super().get_page_html()
+        self.soup = BeautifulSoup(self.html, 'html.parser')
+        self.structure = html.fromstring(str(self.soup))
+
     def get_post_text(self, id):
-        # Seleciona todas as divs que estão dentro de um span com texto que tenha tamanho maior que 50
+        # função para conseguir o texto do post
         self.renew_html()
 
         # Encontrar texto pelo xpath
@@ -115,11 +120,6 @@ class Scraper(Driver):
         full_text = " ".join(texts).replace('\u200c', '')
 
         return full_text
-
-    def renew_html(self):
-        self.html = super().get_page_html()
-        self.soup = BeautifulSoup(self.html, 'html.parser')
-        self.structure = html.fromstring(str(self.soup))
 
     def get_post_number_by_month(self, month):
         # função para verificar quantos posts existem naquele mês
