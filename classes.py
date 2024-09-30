@@ -94,10 +94,49 @@ class Driver:
     def get_page_html(self):
         return self.driver.page_source
     
+class Scraper(Driver):
+    def __init__(self):
+        super().__init__()
+        self.html = None
+        self.soup = None
+        self.structure = None
+        self.posts = {} # ex: 'janeiro': [post(id=1), post(id=2)...]
+
+    def get_post_text(self, id):
+        # Seleciona todas as divs que estão dentro de um span com texto que tenha tamanho maior que 50
+        self.renew_html()
+
+        # Encontrar texto pelo xpath
+        base_xpath = f'/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{id}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span'
+
+        texts = [text.text_content() for text in self.structure.xpath(base_xpath + '/div/div') + self.structure.xpath(base_xpath + '/div/div/span') 
+                 if type(text.text) == str]
+
+        full_text = " ".join(texts).replace('\u200c', '')
+
+        return full_text
+
+    def renew_html(self):
+        self.html = super().get_page_html()
+        self.soup = BeautifulSoup(self.html, 'html.parser')
+        self.structure = html.fromstring(str(self.soup))
+
+    def get_post_number_by_month(self, month):
+        # função para verificar quantos posts existem naquele mês
+
+        # Passo 1: descer a página até o ultimo post daquele mês
+        # Passo 2: verificar o número de posts
+        pass
+
+    def collect_posts(self, month):
+        # função para coletar e armazenar os dados dos posts do mês escolhido
+        pass
+
+
 class Post:
     def __init__(self):
-        self.id = None
         self.month = None
+        self.id = None
         self.text = None
         self.img_type = None
         self.likes = None
@@ -105,31 +144,5 @@ class Post:
         self.shares = None
         self.comments = []
         
-class Scraper(Driver):
-    def __init__(self):
-        super().__init__()
-        self.html = None
-        self.soup = None
-        self.structure = None
-
-    def get_post_text(self, id):
-        # Seleciona todas as divs que estão dentro de um span com texto que tenha tamanho maior que 50
-        self.renew_html()
-        posts = self.soup.select('span div div', style="text-align: start;")
-
-        base_xpath = '/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[{i}]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span'
-
-        # Tratamento do texto
-        selected_text = [div.get_text(strip=True) for div in posts
-                            if div.get_text(strip=True) != '' and len(div.get_text(strip=True)) > 50]
-        
-        #card 1 = /html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[1]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span
-        #card 2 = /html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[2]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span
-        #card 3 = /html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[3]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span
-        #card 4 = /html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div/div[4]/div[2]/div/div[2]/div[2]/div[4]/div/div/div/div/div/div/div/div/div/div/div[13]/div/div/div[3]/div[1]/div/div/div/span
-
-    def renew_html(self):
-        self.html = super().get_page_html()
-        self.soup = BeautifulSoup(self.html, 'html.parser')
-        self.structure = html.fromstring(str(self.soup))
-
+    def __repr__(self) -> str:
+        pass
