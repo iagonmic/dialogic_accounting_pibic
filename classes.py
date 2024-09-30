@@ -62,16 +62,30 @@ class Driver:
 
         return element
     
-    def get_element_list(self, xpath:str, time=20, element_number_click:int=None, click_all=False):
+    def get_element_list(self, xpath, time=20, element_number_click:int=None, click_all=False):
         elements = None
-        try:
-            elements = (WebDriverWait(self.driver,time)
-                        .until(EC.presence_of_all_elements_located((By.XPATH, xpath))))
-        except:
-            return elements
+        if isinstance(xpath, str):
+            try:
+                elements = (WebDriverWait(self.driver,time)
+                            .until(EC.presence_of_all_elements_located((By.XPATH, xpath))))
+            except:
+                return elements
+            
+        if isinstance(xpath, list):
+            for i in xpath:
+                try:
+                    elements = (WebDriverWait(self.driver,time)
+                                .until(EC.presence_of_all_elements_located((By.XPATH, i)))) #retorna o primeiro que ele encontrar do xpath_list
+                    
+                    return elements
+                except:
+                    pass
 
         if element_number_click is not None:
-            elements[element_number_click].click()
+            try:
+                elements[element_number_click].click() # message: element not iteractable
+            except:
+                pass
 
         if click_all is not False:
             for element in elements:
@@ -96,13 +110,16 @@ class Driver:
         # clicar no botão entrar
         self.get_element('//button[@value=1]', click=True)
 
-    def go_to_element(self, xpath_list:list=None, time=10, tries=5, tries_count=0):
+
+    def go_to_element(self, xpath_list:list=None, time=10, tries=10, tries_count=0):
         # ir para o elemento, caso esteja disponivel no html
         elements = self.get_element_list(xpath_list, time)
 
         if elements is not None:
             for element in elements:
-                self.driver.execute_script("arguments[0].scrollIntoView();", element)
+                sleep(2)
+                ActionChains(self.driver).move_to_element(element).perform()
+                sleep(randint(2,4))
                 return 'Elemento encontrado'
 
         # caso contrário, rolar a tela para baixo e executar novamente a função
@@ -110,7 +127,7 @@ class Driver:
         if tries_count == tries:
             return 'Elemento não encontrado'
 
-        self.driver.execute_script("window.scrollBy(0, 200);")
+        ActionChains(self.driver).scroll_by_amount(0,200).perform()
         sleep(randint(2,4))
         self.go_to_element(xpath_list, time, tries, tries_count)
 
@@ -120,6 +137,13 @@ class Driver:
 
     def get_page_html(self):
         return self.driver.page_source
+    
+    def click_vermais(self, position_change=False):
+        position_before = self.driver.execute_script("return [window.pageXOffset, window.pageYOffset];")
+        self.get_element_list('//div[text()="Ver mais"]', element_number_click=0)
+        sleep(randint(2,4))
+        if position_change is not True:
+            self.driver.execute_script("window.scrollTo(arguments[0], arguments[1]);", position_before[0], position_before[1])
 
     
 class Scraper(Driver):
@@ -176,14 +200,13 @@ class Scraper(Driver):
         # função para conseguir o texto do post
         self.renew_html()
 
+        self.click_vermais()
+        
         self.go_to_element([
             self.xpaths['facebook_post_text'].format(id=id),
             self.xpaths['facebook_reels_text'].format(id=id)
             ])
         
-        self.get_element_list('//div[text()="Ver mais"]', element_number_click=0)
-
-        sleep(randint(2,4))
 
         self.renew_html() # pois clicou em ver mais e alterou o texto
 
@@ -198,6 +221,20 @@ class Scraper(Driver):
             texts = [element.text_content().rstrip().lstrip() for element in elements]
 
             full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
+
+            if "… Ver mais" in full_text:
+                print('ver mais identificado')
+                self.driver.execute_script("window.scrollBy(0, 500);")
+                self.click_vermais()
+                # caso veja o ver mais, rolar para cima e tentar novamente
+                try:
+                    self.driver.execute_script("window.scrollBy(0, 500);")
+                except:
+                    self.driver.execute_script("window.scrollTo(0, 0);")
+
+                sleep(randint(2,4))
+                
+                self.get_text(id)
 
             return full_text
         

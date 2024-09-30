@@ -17,5 +17,5 @@ if self.get_element_list('//input[contains(@class, "inputtext")]', time=5) != No
 # entrar nos sites dos governos
 self.get_url('https://www.facebook.com/GovernoParaiba')
 
-for i in range(1,6):
+for i in range(1,21):
     print(self.get_text(i))
