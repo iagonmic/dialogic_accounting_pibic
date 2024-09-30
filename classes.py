@@ -117,7 +117,7 @@ class Driver:
 
         if elements is not None:
             for element in elements:
-                ActionChains(self.driver).scroll_to_element(element).perform()
+                self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
                 sleep(randint(2,4))
                 return 'Elemento encontrado'
 
@@ -126,7 +126,9 @@ class Driver:
         if tries_count == tries:
             return 'Elemento não encontrado'
 
-        ActionChains(self.driver).scroll_by_amount(0,200).perform()
+        # Rolar a página para baixo
+        self.driver.execute_script("window.scrollBy(0, 200);")
+
         sleep(randint(2,4))
         self.go_to_element(xpath_list, time, tries, tries_count)
 
