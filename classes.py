@@ -221,7 +221,7 @@ class Scraper(Driver):
 
         if len(elements) > 0:
 
-            texts = [element.text_content().rstrip().lstrip() for element in elements]
+            texts = [self.remove_emoji(element.text_content()).strip() for element in elements]
 
             full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
 
@@ -240,9 +240,9 @@ class Scraper(Driver):
 
                 if len(elements) > 0:
 
-                    texts = [element.text_content().rstrip().lstrip() for element in elements]
+                    texts = [element.text_content().strip() for element in elements]
 
-                    full_text = self.remove_emoji(" ".join(texts).lstrip().replace('Ver menos', ''))
+                    full_text = " ".join(texts).replace('Ver menos', '').strip()
                 
                     return full_text
 
