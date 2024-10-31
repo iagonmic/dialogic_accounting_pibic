@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-#from parameters import max_try, data_to_stop
+from parameters import max_try, data_to_stop
 from time import sleep
 import pandas as pd
 from datetime import datetime, timedelta
@@ -12,7 +12,9 @@ import os
 from selenium.webdriver.common.action_chains import ActionChains
 import random
 
-max_try = 5
+from lxml import html
+from pdb import set_trace
+from platform import system
 
 class crawler:
     links = {"insta_login": "https://www.instagram.com/accounts/login/?source=auth_switcher",
@@ -225,7 +227,7 @@ class crawler:
             #         break
             tries = 0
             post.click()
-            sleep(random.randint(4, 10))
+            sleep(random.randint(4, 12))
             sopa = BeautifulSoup(self.chrome.page_source, "html.parser")
             post_info = sopa.find("div", {
                 "class": "x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1n2onr6 x1plvlek xryxfnj x1c4vz4f x2lah0s x1q0g3np xqjyukv x1qjc9v5 x1oa3qoh xl56j7k"})
@@ -293,11 +295,28 @@ class crawler:
                 run = False
                 break
             link = self.chrome.current_url
-            #set_trace()
             try:
+                
+                '''
+                # primeira maneira (classes)
                 qtd_curtidas = post_info.find("span", {
                     "class": "x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs xt0psk2 x1i0vuye xvs91rp x1s688f x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"}).text.replace(
                     " curtidas", "")
+                '''
+
+                # segunda maneira (usando lxml)
+                estrutura = html.fromstring(str(sopa))
+                    
+                curtidas_text_list = list(dict.fromkeys(estrutura.xpath(f'/html/body/div[5]/div[1]/div/div[3]/div/div/div/div/div[2]/div/article/div/div[2]/div/div/div[2]/section[2]/div/div/span/a/span/span')))                
+                qtd_curtidas = curtidas_text_list[0].text_content()
+
+                if qtd_curtidas == '0':
+                    # primeira maneira (antiga)
+                    qtd_curtidas = post_info.find("span", {
+                        "class": "x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs xt0psk2 x1i0vuye xvs91rp x1s688f x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"}).text.replace(
+                        " curtidas", "")
+                
+
             except:
                 qtd_curtidas = 0
             # print(f"Post: {postText.text}\nComentários: {commentsTexts}\nCurtidas: {qtd_curtidas}\nLink: {link}\nData: {data_yymmdd}")
@@ -409,37 +428,16 @@ if __name__ == "__main__":
                 print("Data inválida")
                 data_to_stop = input("Digite a data de parada (dd/mm/aaaa): ")
         pesquisa_insta = input("Digite o link do instagram: ")
-        cookies_folder = os.path.join(os.getcwd(), "cookies")
 
-        #---------------------          
+        if system() == 'Windows':
+            cookies_folder = os.path.join(os.getcwd(), "cookies")
+            chrome = uc.Chrome(user_data_dir=cookies_folder)
+
+        if system() == 'Linux':
+            cookies_folder = '/home/iagonmic/.config/google-chrome/Default'
+            chrome = uc.Chrome(driver_executable_path='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/chromedriver-linux64/chromedriver', user_data_dir=cookies_folder)
+
         
-        chrome_version = os.popen("/opt/google/chrome/google-chrome --version | awk '{print $3}'").read() # linux
-
-        servico = Service(ChromeDriverManager(driver_version=chrome_version[:-1]).install())
-
-        opcoes = webdriver.ChromeOptions()
-
-        # LINUX:
-        opcoes.binary_location = "/usr/bin/google-chrome"
-        opcoes.add_argument("--no-sandbox")
-        opcoes.add_argument("--disable-dev-shm-usage")
-        opcoes.add_argument("--start-fullscreen")
-        opcoes.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-        opcoes.add_argument("--disable-blink-features=AutomationControlled")
-        opcoes.add_argument("--disable-web-security")
-        opcoes.add_argument("--disable-site-isolation-trials")
-
-        opcoes.add_argument('user-data-dir=/home/iagonmic/.config/google-chrome')
-
-        # WINDOWS: opcoes.add_argument('user-data-dir=C:/Users/User/AppData/Local/Google/Chrome/User Data')
-
-        opcoes.add_experimental_option('detach', True)
-
-        chrome = uc.Chrome(service=servico, options=opcoes)
-
-        #---------------------
-
-        #chrome = uc.Chrome(service=servico, user_data_dir=cookies_folder)
         if os.path.exists("instagram_posts.csv"):
             posts = pd.read_csv("instagram_posts.csv", encoding="utf-8-sig",sep=";")
         else:
