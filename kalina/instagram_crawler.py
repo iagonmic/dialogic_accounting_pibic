@@ -4,7 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-from parameters import max_try, data_to_stop
+#from parameters import max_try, data_to_stop
 from time import sleep
 import pandas as pd
 from datetime import datetime, timedelta
@@ -15,6 +15,12 @@ import random
 from lxml import html
 from pdb import set_trace
 from platform import system
+
+if system() == 'Windows':
+    from parameters import max_try, data_to_stop
+
+if system() == 'Linux':
+    max_try = 5
 
 class crawler:
     links = {"insta_login": "https://www.instagram.com/accounts/login/?source=auth_switcher",
