@@ -303,7 +303,7 @@ class crawler:
             link = self.chrome.current_url
             try:
                 
-                '''
+                
                 # primeira maneira (classes)
                 qtd_curtidas = post_info.find("span", {
                     "class": "x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs xt0psk2 x1i0vuye xvs91rp x1s688f x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"}).text.replace(
@@ -321,6 +321,7 @@ class crawler:
                     qtd_curtidas = post_info.find("span", {
                         "class": "x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs xt0psk2 x1i0vuye xvs91rp x1s688f x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"}).text.replace(
                         " curtidas", "")
+                '''
                 
 
             except:
