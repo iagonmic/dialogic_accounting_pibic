@@ -1,6 +1,7 @@
 import undetected_chromedriver as uc
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
@@ -173,10 +174,11 @@ class crawler:
                 {"Post": postText, "Comentários": comments, "Curtidas": curtidas, "Link": linkpost,
                  "Plataforma": "Instagram", "QTD_Comentários": len(comments), "QTD_Compartilhamentos": 0, "Imagem": img,
                  "Data": data_input})
-
-            print(date)
             post_date = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
             stop_date = datetime.strptime(data_to_stop, "%d/%m/%Y")
+
+            print(post_date, stop_date)
+            
             if post_date < stop_date:
                 break
         # chrome.quit()
@@ -297,6 +299,9 @@ class crawler:
             data_input = datetime.strptime(postData, "%Y-%m-%dT%H:%M:%S.%fZ")
             data_yymmdd = data_input.strftime("%d/%m/%Y")
             data_to_stop_obj = datetime.strptime(data_to_stop, "%d/%m/%Y")
+
+            print(data_yymmdd)
+            
             if data_input < data_to_stop_obj:
                 run = False
                 break
@@ -441,10 +446,16 @@ if __name__ == "__main__":
             chrome = uc.Chrome(user_data_dir=cookies_folder)
 
         if system() == 'Linux':
+            chrome_options = Options()
+            chrome_options.add_argument("--headless") # modo headless
+            chrome_options.add_argument("--no-sandbox")  # Necessário para alguns ambientes de contêiner
+            chrome_options.add_argument("--disable-dev-shm-usage")  # Reduz o uso de /dev/shm
+            chrome_options.add_argument("--disable-gpu")  # Desativa aceleração de GPU
+            chrome_options.add_argument("--disable-software-rasterizer")  # Desativa renderização de software
+            chrome_options.add_argument("--disable-extensions")  # Desativa extensões desnecessárias
             cookies_folder = '/home/iagonmic/.config/google-chrome/Default'
-            chrome = uc.Chrome(driver_executable_path='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/chromedriver-linux64/chromedriver', user_data_dir=cookies_folder)
+            chrome = uc.Chrome(chrome_options=chrome_options, driver_executable_path='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/chromedriver-linux64/chromedriver', user_data_dir=cookies_folder)
 
-        
         if os.path.exists("instagram_posts.csv"):
             posts = pd.read_csv("instagram_posts.csv", encoding="utf-8-sig",sep=";")
         else:
