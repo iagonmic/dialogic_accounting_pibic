@@ -6,6 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 #from parameters import max_try, data_to_stop
+from fake_useragent import UserAgent
 from time import sleep
 import pandas as pd
 from datetime import datetime, timedelta
@@ -446,6 +447,7 @@ if __name__ == "__main__":
             chrome = uc.Chrome(user_data_dir=cookies_folder)
 
         if system() == 'Linux':
+            userAgent = UserAgent.random
             chrome_options = Options()
             chrome_options.add_argument("--headless") # modo headless
             chrome_options.add_argument("--no-sandbox")  # Necessário para alguns ambientes de contêiner
@@ -453,6 +455,7 @@ if __name__ == "__main__":
             chrome_options.add_argument("--disable-gpu")  # Desativa aceleração de GPU
             chrome_options.add_argument("--disable-software-rasterizer")  # Desativa renderização de software
             chrome_options.add_argument("--disable-extensions")  # Desativa extensões desnecessárias
+            chrome_options.add_argument(f"--user-agent={userAgent}")
             cookies_folder = '/home/iagonmic/.config/google-chrome/Default'
             chrome = uc.Chrome(chrome_options=chrome_options, driver_executable_path='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/chromedriver-linux64/chromedriver', user_data_dir=cookies_folder)
 
