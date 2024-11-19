@@ -66,7 +66,7 @@ profiles = {
 for key, value in profiles.items():
     print(f'{key}: {value}')
 
-profile_user = profiles[int(input('Digite o número de um dos governos abaixo para pegar os dados: '))]
+profile_user = profiles[int(input('Digite o número de um dos governos acima para pegar os dados: '))]
 
 instaloader = Instaloader()
 #instaloader.login(user=env['user'], passwd=env['senha'])
