@@ -30,8 +30,8 @@ def remove_strange_characters(text:str):
 
 env = dotenv_values(find_dotenv())
 
-SINCE = datetime.now()
-UNTIL = datetime(2024, 11, 12)
+SINCE = datetime(2024, 10, 4)
+UNTIL = datetime(2024, 1, 1)
 
 instaloader = Instaloader()
 #instaloader.login(user=env['user'], passwd=env['senha'])
@@ -68,7 +68,7 @@ for post in takewhile(lambda p: p.date > UNTIL, dropwhile(lambda p: p.date > SIN
     
     sleep(randint(10,40))
 
-    print(f"\nData atual do post: {datetime.strftime(post.date, '%d/%m/%Y')}\n")
+    print(f"Data atual do post: {datetime.strftime(post.date, '%d/%m/%Y')}")
 
     post_content_list.append(post_content)
 
