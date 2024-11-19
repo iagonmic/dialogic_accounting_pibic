@@ -30,14 +30,47 @@ def remove_strange_characters(text:str):
 
 env = dotenv_values(find_dotenv())
 
-SINCE = datetime(2024, 10, 4)
-UNTIL = datetime(2024, 1, 1)
+SINCE = datetime.strptime(input('Digite a data inicial em d/m/y: '), '%d/%m/%Y')
+UNTIL = datetime.strptime(input('Digite a data final em d/m/y: '), '%d/%m/%Y')
+
+profiles = {
+    1: "governo.acre",
+    2: "governodealagoas",
+    3: "governoamapa",
+    4: "governo_do_amazonas",
+    5: "govba",
+    6: "governodoceara",
+    7: "gov_df",
+    8: "governo_es",
+    9: "governogoias",
+    10: "governoma",
+    11: "govmatogrosso",
+    12: "governoms",
+    13: "governomg",
+    14: "governopara",
+    15: "govparaiba",
+    16: "governoparana",
+    17: "governope",
+    18: "governodopiaui",
+    19: "govrj",
+    20: "governodorn",
+    21: "governo_rs",
+    22: "governoro",
+    23: "govroraima",
+    24: "governosc",
+    25: "governosp",
+    26: "governosergipe",
+    27: "governodotocantins",
+}
+
+for key, value in profiles.items():
+    print(f'{key}: {value}')
+
+profile_user = profiles[int(input('Digite o número de um dos governos abaixo para pegar os dados: '))]
 
 instaloader = Instaloader()
 #instaloader.login(user=env['user'], passwd=env['senha'])
 instaloader.load_session_from_file(username=env['user'], filename='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/insta_session')
-
-profile_user = 'governope'
 
 posts = Profile.from_username(instaloader.context, profile_user).get_posts()
 
