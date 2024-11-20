@@ -7,6 +7,8 @@ import re
 import os
 from time import sleep
 from random import randint
+from fake_useragent import UserAgent
+import numpy as np
 
 def remove_strange_characters(text:str):
     # Regex para identificar emojis com base nos intervalos Unicode
@@ -30,7 +32,6 @@ def remove_strange_characters(text:str):
 
 env = dotenv_values(find_dotenv())
 
-SINCE = datetime.strptime(input('Digite a data inicial em d/m/y: '), '%d/%m/%Y')
 UNTIL = datetime.strptime(input('Digite a data final em d/m/y: '), '%d/%m/%Y')
 
 profiles = {
@@ -68,43 +69,67 @@ for key, value in profiles.items():
 
 profile_user = profiles[int(input('Digite o número de um dos governos acima para pegar os dados: '))]
 
-instaloader = Instaloader()
-#instaloader.login(user=env['user'], passwd=env['senha'])
-instaloader.load_session_from_file(username=env['user'], filename='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/insta_session')
+def main():
+    instaloader = Instaloader(user_agent=UserAgent().random, fatal_status_codes=[400], iphone_support=False)
+    #instaloader.login(user=env['user'], passwd=env['senha'])
+    instaloader.load_session_from_file(username=env['user'], filename='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/insta_session')
 
-posts = Profile.from_username(instaloader.context, profile_user).get_posts()
+    posts = Profile.from_username(instaloader.context, profile_user).get_posts()
 
-post_content_list = []
+    df = None
 
-df = None
+    since = None
+    if os.path.exists(os.path.join(os.getcwd(), f'estados/{profile_user}.csv')):
+        df = pd.read_csv(f'estados/{profile_user}.csv')
+        since = datetime.strptime(df['data'].iloc[-1], '%d/%m/%Y') # continuar a partir da última data do csv
+        since = since.replace(day=since.day-1)
+    else:
+        df = pd.DataFrame()
+        since = datetime.now()
 
-if os.path.exists(os.path.join(os.getcwd(), f'estados/{profile_user}.csv')):
-    df = pd.read_csv(f'estados/{profile_user}.csv')
-else:
-    df = pd.DataFrame()
+    print(f'Since = {since}')
 
-n = 0
-for post in takewhile(lambda p: p.date > UNTIL, dropwhile(lambda p: p.date > SINCE, posts)):
+    n = 0
+    for post in takewhile(lambda p: p.date > UNTIL, dropwhile(lambda p: p.date > since, posts)):
 
-    comments = [remove_strange_characters(comment.text) for comment in post.get_comments()]
+        comments = [remove_strange_characters(comment.text) for comment in post.get_comments()]
 
-    post_content = {
-        'post': remove_strange_characters(post.caption),
-        'qtd_curtidas': post.likes,
-        'qtd_comentarios': post.comments,
-        'data': datetime.strftime(post.date, '%d/%m/%Y'),
-        'video': 'Sim' if post.is_video == True else 'Não',
-        'url': f'https://www.instagram.com/p/{post.shortcode}/',
-        'media_url': post.url,
-        'comentarios': [comments]
-    }
-    
-    sleep(randint(10,40))
+        post_content = {
+            'post': remove_strange_characters(post.caption),
+            'qtd_curtidas': post.likes,
+            'qtd_comentarios': post.comments,
+            'data': datetime.strftime(post.date, '%d/%m/%Y'),
+            'video': 'Sim' if post.is_video == True else 'Não',
+            'url': f'https://www.instagram.com/p/{post.shortcode}/',
+            'media_url': post.url,
+            'comentarios': [comments]
+        }
+        
+        sleep(max(15, np.random.normal(40, 10)))
 
-    print(f"Data atual do post: {datetime.strftime(post.date, '%d/%m/%Y')}")
+        if randint(1, 20) == 1:  # 5% de chance
+            tempo_espera = randint(120, 300)  # Pausa longa de 2 a 5 minutos
+            print(f"Pausa longa de {tempo_espera} segundos...")
+            sleep(tempo_espera)
 
-    post_content_list.append(post_content)
 
-    df = pd.concat([df, pd.DataFrame(post_content)])
+        print(f"Data atual do post: {datetime.strftime(post.date, '%d/%m/%Y')}")
 
-    df.to_csv(f'estados/{profile_user}.csv', index=False)
+        df = pd.concat([df, pd.DataFrame(post_content)])
+
+        df.to_csv(f'estados/{profile_user}.csv', index=False)
+
+        print(f'{n} requisições feitas até o momento...')
+        
+        n += 1
+
+        if n == 200:
+            # a cada 200 requisições
+            tempo = randint(1800,3600)
+            print(f'Dormindo {tempo} segundos')
+            sleep(tempo)
+            main()
+            
+
+if __name__ == '__main__':
+    main()
