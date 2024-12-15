@@ -70,9 +70,11 @@ for key, value in profiles.items():
 profile_user = profiles[int(input('Digite o número de um dos governos acima para pegar os dados: '))]
 
 def main():
-    instaloader = Instaloader(user_agent=UserAgent().random, fatal_status_codes=[400], iphone_support=False)
+    instaloader = Instaloader(user_agent=UserAgent().random, fatal_status_codes=[400, 401], iphone_support=False)
     #instaloader.login(user=env['user'], passwd=env['senha'])
+    #instaloader.save_session_to_file('insta_session')
     instaloader.load_session_from_file(username=env['user'], filename='/home/iagonmic/data_science/UFPB/dialogic_accounting_pibic/insta_session')
+    instaloader.test_login()
 
     posts = Profile.from_username(instaloader.context, profile_user).get_posts()
 
@@ -105,7 +107,7 @@ def main():
             'comentarios': [comments]
         }
         
-        sleep(max(15, np.random.normal(40, 10)))
+        sleep(max(15, np.random.normal(40, 15)))
 
         if randint(1, 20) == 1:  # 5% de chance
             tempo_espera = randint(120, 300)  # Pausa longa de 2 a 5 minutos
@@ -128,7 +130,7 @@ def main():
             tempo = randint(1800,3600)
             print(f'Dormindo {tempo} segundos')
             sleep(tempo)
-            main()
+            n = 0
             
 
 if __name__ == '__main__':
