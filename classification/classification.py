@@ -14,14 +14,14 @@ df = pd.read_excel('classification/Aracaju.xlsx', engine='openpyxl')
 load_dotenv(find_dotenv())
 
 models = [
-    'llama-3.1-70b-versatile',
+    'meta-llama/llama-4-maverick-17b-128e-instruct',
     'llama-3.3-70b-versatile',
-    'llama3-groq-70b-8192-tool-use-preview',
-    'llama-3.2-11b-text-preview',
-    'llama-3.2-90b-text-preview'
+    'deepseek-r1-distill-llama-70b',
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+    'qwen-qwq-32b'
 ]
 
-chat = ChatGroq(model='llama-3.1-70b-versatile')
+chat = ChatGroq(model='llama-3.3-70b-versatile')
 
 prompt = ChatPromptTemplate.from_template('''
 Você é um analista de dados, trabalhando em um projeto de dados.
