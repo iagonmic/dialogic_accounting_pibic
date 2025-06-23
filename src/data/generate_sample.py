@@ -8,10 +8,11 @@ raw_data = os.path.join(data_path, "raw/")
 
 files = glob(raw_data + "*.xlsx")
 
-file = choice(files)
+#file = choice(files)
+file = files[26] # gov_df
 
-df = pd.read_excel(file)
+df = pd.read_excel(file).sample(250).filter(['Message'])
 
-df = df.sample(100)
+df["Informações Financeiras"] = ""
 
-df.to_excel(os.path.join(data_path, "interim/") + file.split('\\')[-1], index=False)
+df.to_excel(os.path.join(data_path, "interim/") + file.split('\\')[-1], index=True)

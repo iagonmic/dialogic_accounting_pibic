@@ -24,10 +24,12 @@ Existem exclusões importantes que levam à classificação "não".
 Mensagens sobre eventos, promoções, feiras, shows e festas devem ser classificadas como "não", mesmo que impliquem gastos públicos, se o foco for a divulgação e não o detalhamento financeiro. 
 Palavras como evento, festas, festival, show, programação cultural, carnaval, natal, ano novo, campanha, desconto, promoção, inscrição, divulgação, comunicado, dia, e horário em uma mensagem conduzem à classificação "não". Por exemplo, a postagem "Nosso primeiro Réveillon Ananin tá ON! Confira a programação completa que conta com um grande espetáculo de shows e fogos para toda a família. Quer saber mais? O nosso site oficial, ananews.com.br, tem todas as informações" é "não", pois foca na programação do evento e não em seus custos. Adicionalmente, em contextos específicos como análises de dados de 2021 (auge da pandemia de COVID-19), mensagens relacionadas a vacinação (contendo palavras como vacina, vacinação, vacinado e derivados) devem ser classificadas como "não" para evitar distorções devido ao alto volume, mesmo que envolvam execução orçamentária.
                                           
-Lembre-se, se tiver uma menção mesmo que implícita a parte orçamentária, classifique como "sim".
+Lembre-se, se tiver uma menção mesmo que implícita a parte orçamentária, classifique como "sim". Muito importante: para diferenciar, o foco da mensagem é o mais importante, se tiver detalhamento financeiro na mensagem ou planejamento orçamentário concluído, falando de investimentos, despesas, receitas ou algum desses, classifique como "sim", do contrário, classifique como "não".
 
 Analise o texto que será fornecido a seguir e responda apenas com "sim" ou "não".    
 
 Texto: {text}                               
 '''
 )
+
+df = pd.read_excel('')
