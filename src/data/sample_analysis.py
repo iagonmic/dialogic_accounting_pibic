@@ -7,6 +7,8 @@ from groq import RateLimitError, InternalServerError
 from langchain_core.prompts import ChatPromptTemplate
 from random import choice, randint
 from time import sleep
+import re
+from tqdm import tqdm
 
 load_dotenv(find_dotenv())
 
@@ -22,18 +24,23 @@ models = [
 data_path = "C:/Users/iagof/Desktop/Data Science/dialogic_accounting_pibic/data"
 interim_data = os.path.join(data_path, "interim/")
 
-file_human = glob(interim_data + "*human.xlsx")[0]
-file_llm = glob(interim_data + "*llm.xlsx")[0]
 
-df_human = pd.read_excel(file_human).rename(columns={"Unnamed: 0": "Original_index"})
-df_llm = pd.read_excel(file_llm).rename(columns={"Unnamed: 0": "Original_index"})
+if os.path.exists(interim_data + 'df_gov_final_sample.xlsx'):
+    df = pd.read_excel(interim_data + 'df_gov_final_sample.xlsx')
 
-df = pd.merge(df_human, df_llm, on='Original_index').filter(
-    ['Original_index', 'Message_x', 'Informações Financeiras_x']).rename(columns={
-         'Original_index': "Original Index",
-        'Message_x': "Message",
-        'Informações Financeiras_x': "Informação Financeira Humano"   
-    })
+else:
+    file_human = glob(interim_data + "*human.xlsx")[0]
+    file_llm = glob(interim_data + "*llm.xlsx")[0]
+
+    df_human = pd.read_excel(file_human).rename(columns={"Unnamed: 0": "Original_index"})
+    df_llm = pd.read_excel(file_llm).rename(columns={"Unnamed: 0": "Original_index"})
+    
+    df = pd.merge(df_human, df_llm, on='Original_index').filter(
+        ['Original_index', 'Message_x', 'Informações Financeiras_x']).rename(columns={
+            'Original_index': "Original Index",
+            'Message_x': "Message",
+            'Informações Financeiras_x': "Informação Financeira Humano"   
+        })
 
 '''
 prompt = ChatPromptTemplate.from_template(
@@ -146,34 +153,63 @@ prompt_dict = {
     """)
 }
 
+output_path = os.path.join(data_path, "interim/", "df_gov_final_sample.xlsx")
+
+# inputar colunas
 def llm_response(model):
     chat = ChatGroq(model=model)
 
-    response_list = []
-    for prompt_key, prompt_value in prompt_dict.items():    
-        for text in list(df['Message'].values):
+    for prompt_key, prompt_value in prompt_dict.items():
+        column_name = f"{model} - {prompt_key}"
+        if column_name not in df.columns:
+            df[column_name] = None
+
+        for idx, text in enumerate(tqdm(list(df['Message'].values), desc=f"{model} - {prompt_key}", total=len(df))):
+            if pd.notna(df.at[idx, column_name]):
+                continue
+
             resposta = None
             while resposta is None:
                 try:
                     resposta = chat.invoke(prompt_value.format_messages(text=text))
+
+                except RateLimitError or InternalServerError:
+                    print(f'Rate limit atingido, retornando função')
+                    return df
 
                 except Exception as e:
                     print(f'Deu erro, exceção do tipo: {e}. Dormindo 20s...')
                     print(f'{type(e).__name__}')
                     sleep(20)
 
-            resposta_final = resposta.content[-3:].capitalize()
+            if re.search(pattern=r'\bsim\b', string=resposta.content, flags=re.IGNORECASE):
+                resposta_final = 'Sim'
+            elif re.search(pattern=r'\bnão\b', string=resposta.content, flags=re.IGNORECASE):
+                resposta_final = 'Não'
+            else:
+                resposta_final = None
 
-            response_list.append(resposta_final)
-            print(len(response_list), resposta_final)
+            df.at[idx, column_name] = resposta_final
+
             sleep(randint(2,4))
-
-    df[f'{model} - {prompt_key}'] = response_list
-
+            df.to_excel(output_path, index=False)
+    
     return df
 
-# calcular taxa de acerto
 for model in models:
     df = llm_response(model)
 
-#df.to_excel(os.path.join(data_path, "interim/") + 'df_gov_final_sample.xlsx', index=False)
+"""
+# calcular taxa de acerto
+accuracy_dict = {'Original Index': 'Model Accuracy', 'Message': None, 'Informação Financeira Humano': None}
+for col in df.columns:
+    if any(model in col for model in models):
+        correct = df[col].str.lower() == df['Informação Financeira Humano'].str.lower()
+        accuracy_dict[col] = f"{correct.mean():.2f}%"
+
+df = pd.concat([df, pd.DataFrame(accuracy_dict)], ignore_index=True)
+
+df.to_excel(output_path, index=False)
+    
+"""
+
