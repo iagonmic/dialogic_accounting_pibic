@@ -21,12 +21,16 @@ models = [
     'qwen-qwq-32b'
 ]
 
+models_refined = [
+    'meta-llama/llama-4-scout-17b-16e-instruct',
+]
+
 data_path = "C:/Users/iagof/Desktop/Data Science/dialogic_accounting_pibic/data"
 interim_data = os.path.join(data_path, "interim/")
 
 
 if os.path.exists(interim_data + 'df_gov_final_sample.xlsx'):
-    df = pd.read_excel(interim_data + 'df_gov_final_sample.xlsx')
+    df = pd.read_excel(interim_data + 'sample/df_gov_final_sample.xlsx')
 
 else:
     file_human = glob(interim_data + "*human.xlsx")[0]
@@ -150,6 +154,53 @@ prompt_dict = {
 
     Texto a ser classificado: {text}
 
+    """),
+    "prompt_original": ChatPromptTemplate.from_template(
+    '''
+    Sua tarefa é classificar o texto fornecido como contendo informação financeira, respondendo "sim", ou não contendo informação financeira, respondendo "não". O critério fundamental para essa classificação é o vínculo direto das ações descritas no texto com recursos financeiros, investimentos, despesas públicas, receitas ou quaisquer ações relacionadas à execução orçamentária.
+
+    Uma mensagem deve ser classificada como "sim" se apresentar menções explícitas ou implicitas a valores, investimentos, despesas, ou receitas. Por exemplo, o texto "A semana começou com um café da manhã na Guarda Municipal, onde o prefeito assinou o início do processo licitatório de reforma do prédio. Ainda hoje garantimos equipamentos de controle de distúrbio civil e novos notebooks" é classificado como "sim", pois menciona gastos com reforma e aquisição de materiais, mesmo de maneira implicita. Além disso, a presença de palavras-chave como orçamento, despesa, gasto, impostos, receita ou investimentos automaticamente qualifica a mensagem como "sim".
+
+    Por outro lado, mensagens serão classificadas como "não" se descreverem atividades administrativas, eventos, ou ações sem relação com recursos financeiros.
+    Um exemplo é: "Equipes da Secretaria de Segurança Comunitária e Convívio Social realizaram fiscalização na orla marítima para orientar os trabalhadores sobre a redução de 30% do comércio na região", que é "não" por relatar uma fiscalização.
+
+    Existem exclusões importantes que levam à classificação "não".
+    Mensagens sobre eventos, promoções, feiras, shows e festas devem ser classificadas como "não", mesmo que impliquem gastos públicos, se o foco for a divulgação e não o detalhamento financeiro. 
+    Palavras como evento, festas, festival, show, programação cultural, carnaval, natal, ano novo, campanha, desconto, promoção, inscrição, divulgação, comunicado, dia, e horário em uma mensagem conduzem à classificação "não". Por exemplo, a postagem "Nosso primeiro Réveillon Ananin tá ON! Confira a programação completa que conta com um grande espetáculo de shows e fogos para toda a família. Quer saber mais? O nosso site oficial, ananews.com.br, tem todas as informações" é "não", pois foca na programação do evento e não em seus custos. Adicionalmente, em contextos específicos como análises de dados de 2021 (auge da pandemia de COVID-19), mensagens relacionadas a vacinação (contendo palavras como vacina, vacinação, vacinado e derivados) devem ser classificadas como "não" para evitar distorções devido ao alto volume, mesmo que envolvam execução orçamentária.
+                                            
+    Lembre-se, se tiver uma menção mesmo que implícita a parte orçamentária, classifique como "sim".
+
+    Analise o texto que será fornecido a seguir e responda apenas com "sim" ou "não".    
+
+    Texto: {text}                               
+    
+    '''),
+    "final_prompt": ChatPromptTemplate.from_template("""
+
+    Sua tarefa é determinar se o texto a seguir contém informação financeira, com base em seu conteúdo. Responda apenas com "sim" ou "não".
+
+    Considere "sim" se:
+
+    O texto descreve gastos, investimentos, receitas ou execução orçamentária
+
+    Menciona processos como reforma, aquisição de bens, contratos, licitação, entrega de etapa de reforma ou reparo, obra, fase de obra, iniciativa, novas unidades
+
+    Aparece alguma das seguintes palavras: orçamento, gasto, despesa, receita, investimento, imposto, recursos, contemplação
+
+    Considere "não" se:
+
+    Trata-se de divulgação de eventos, festividades, promoções, campanhas, sorteios, jogo beneficente, negociação de dívidas
+
+    O texto apenas informa datas, locais, horários ou detalhes de atividades públicas
+
+    É uma publicação relacionada à vacinação ou saúde pública em 2021, sem foco financeiro
+
+    Exemplo 1 - "sim": “A prefeitura investiu na construção de duas novas creches com recursos do Fundeb.”
+    Exemplo 2 - "não": “Neste sábado acontece o Festival de Verão com shows gratuitos para toda a comunidade.”
+
+    Se houver palavras que classifiquem mais como "sim" do que "não", classifique como "sim"
+
+    Texto a ser classificado: {text}
     """)
 }
 
@@ -196,10 +247,10 @@ def llm_response(model):
     
     return df
 
-for model in models:
+for model in models_refined:
     df = llm_response(model)
 
-"""
+
 # calcular taxa de acerto
 accuracy_dict = {'Original Index': 'Model Accuracy', 'Message': None, 'Informação Financeira Humano': None}
 for col in df.columns:
@@ -207,9 +258,7 @@ for col in df.columns:
         correct = df[col].str.lower() == df['Informação Financeira Humano'].str.lower()
         accuracy_dict[col] = f"{correct.mean():.2f}%"
 
-df = pd.concat([df, pd.DataFrame(accuracy_dict)], ignore_index=True)
+df = pd.concat([df, pd.DataFrame(accuracy_dict)])
 
 df.to_excel(output_path, index=False)
-    
-"""
 
