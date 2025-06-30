@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from glob import glob
 from dotenv import load_dotenv, find_dotenv
@@ -92,5 +91,9 @@ def llm_response(df:pd.DataFrame, model, file_name):
 
 for file in files:
     file_name = file.split('\\')[-1]
+    current_file = glob(data_path + 'interim/2024_classified/' + f'{file_name}')
+    if len(current_file) > 0:
+        file = current_file[0]
+
     df = pd.read_excel(file)
     llm_response(df, model, file_name)
