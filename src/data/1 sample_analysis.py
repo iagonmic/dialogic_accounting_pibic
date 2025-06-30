@@ -5,7 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 from langchain_groq import ChatGroq
 from groq import RateLimitError, InternalServerError
 from langchain_core.prompts import ChatPromptTemplate
-from random import choice, randint
+from random import randint
 from time import sleep
 import re
 from tqdm import tqdm
@@ -29,7 +29,7 @@ data_path = "C:/Users/iagof/Desktop/Data Science/dialogic_accounting_pibic/data"
 interim_data = os.path.join(data_path, "interim/")
 
 
-if os.path.exists(interim_data + 'df_gov_final_sample.xlsx'):
+if os.path.exists(interim_data + 'sample/df_gov_final_sample.xlsx'):
     df = pd.read_excel(interim_data + 'sample/df_gov_final_sample.xlsx')
 
 else:
@@ -258,7 +258,5 @@ for col in df.columns:
         correct = df[col].str.lower() == df['Informação Financeira Humano'].str.lower()
         accuracy_dict[col] = f"{correct.mean():.2f}%"
 
-df = pd.concat([df, pd.DataFrame(accuracy_dict)])
-
-df.to_excel(output_path, index=False)
+pd.DataFrame.from_dict(accuracy_dict, orient='index', columns=['accuracy']).iloc[3:].to_excel(interim_data + 'sample/model_accuracy.xlsx')
 
