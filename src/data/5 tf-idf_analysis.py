@@ -85,7 +85,7 @@ if __name__ == "__main__":
             "accuracy": accuracy
         })
     df_results = pd.DataFrame(results)
-    df_results.to_excel('C:/Users/iagof/Desktop/Data Science/dialogic_accounting_pibic/data/interim/tf-idf-analysis.xlsx', index=False)
+    df_results.to_excel('C:/Users/iagof/Desktop/Data Science/dialogic_accounting_pibic/data/interim/tf-idf-analysis_2.xlsx', index=False)
 
 
     
