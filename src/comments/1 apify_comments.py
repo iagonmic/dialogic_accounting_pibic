@@ -29,7 +29,10 @@ def get_comments(link):
     dataset_client = apify_client.dataset(call_result['defaultDatasetId'])
     list_items_result = dataset_client.list_items()
 
-    comments = [comment['message'] for comment in list_items_result.items]
+    try:
+        comments = [comment['message'] for comment in list_items_result.items]
+    except:
+        return None
 
     return comments
 
@@ -46,7 +49,11 @@ def main():
         if pd.notna(df.at[idx, 'Comentários']):
             continue
 
+        print(f"--- Linha atual: {idx} ---")
         comments = get_comments(link)
 
         df.at[idx, 'Comentários'] = comments
         df.to_excel('/home/iagonmic/data_science/dialogic_accounting_pibic/data/processed/final_sample.xlsx', index=False)
+
+if __name__ == '__main__':
+    main()
