@@ -29,10 +29,12 @@ def get_comments(link):
     dataset_client = apify_client.dataset(call_result['defaultDatasetId'])
     list_items_result = dataset_client.list_items()
 
-    try:
-        comments = [comment['message'] for comment in list_items_result.items]
-    except:
-        return None
+    comments = []
+    for comment in list_items_result.items:
+        try:
+            comments.append(comment['message'])
+        except:
+            print("Message key error")
 
     return comments
 
