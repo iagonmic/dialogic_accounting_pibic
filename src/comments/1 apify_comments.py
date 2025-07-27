@@ -39,7 +39,7 @@ def get_comments(link):
     return comments
 
 def main():
-    file_path = "/home/iagonmic/data_science/dialogic_accounting_pibic/data/processed/final_sample.xlsx"
+    file_path = "/home/iagonmic/data_science/dialogic_accounting_pibic/data/processed/final_sample_4468.xlsx"
     df = pd.read_excel(file_path)
 
     if 'Comentários' not in df.columns:
@@ -55,7 +55,7 @@ def main():
         comments = get_comments(link)
 
         df.at[idx, 'Comentários'] = comments
-        df.to_excel('/home/iagonmic/data_science/dialogic_accounting_pibic/data/processed/final_sample.xlsx', index=False)
+        df.to_excel('/home/iagonmic/data_science/dialogic_accounting_pibic/data/processed/final_sample_4468.xlsx', index=False)
 
 if __name__ == '__main__':
     main()
