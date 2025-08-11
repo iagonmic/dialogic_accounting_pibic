@@ -14,8 +14,8 @@ def get_all_runs(client, actor_id):
     limit = 100
     while True:
         response = client.actor(actor_id).runs().list(limit=limit, offset=offset)
-        runs.extend(response['items'])
-        if len(response['items']) < limit:
+        runs.extend(response.items)
+        if len(response.items) < limit:
             break
         offset += limit
     return runs
@@ -31,17 +31,17 @@ def main():
     runs = get_all_runs(client, actor_id)
     print(f'Total de runs encontradas: {len(runs)}')
     todas_respostas = []
-    for run in runs:
+    for run in tqdm(runs):
         run_id = run['id']
         try:
             respostas = get_run_output(client, run_id)
             todas_respostas.extend(respostas)
         except Exception as e:
             print(f'Erro ao buscar respostas do run {run_id}: {e}')
-    # Salvar todas as respostas em um arquivo JSON
-    with open('respostas_apify.json', 'w', encoding='utf-8') as f:
-        json.dump(todas_respostas, f, ensure_ascii=False, indent=2)
-    print('Respostas salvas em respostas_apify.json')
+    # Salvar todas as respostas em um arquivo CSV usando pandas
+    df = pd.DataFrame(todas_respostas)
+    df.to_csv('C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data/comentarios.csv', index=False, encoding='utf-8')
+    print('Respostas salvas em data/comentarios_apify.csv')
 
 if __name__ == '__main__':
     main()
