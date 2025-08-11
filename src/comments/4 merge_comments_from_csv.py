@@ -7,22 +7,35 @@ df2 = pd.read_excel('C:/Users/Usuario/Desktop/data-science/dialogic_accounting_p
 
 df_list = [df1, df2]
 
-def safe_get_username(row):
-    # Verifica se o campo user não é NaN
-    if pd.isna(row['user']):
-        return {'comment': row['message'], 'user': None}
-    try:
-        user_dict = literal_eval(row['user'])
-        username = user_dict.get('username', None)
-    except Exception:
-        username = None
-    return {'comment': row['message'], 'user': username}
+df_comments_subset = df_comments[['postId', 'message', 'user']]
 
-df_comments['Comentários'] = df_comments.apply(safe_get_username, axis=1)
+# Agrupa por postId e cria uma lista de dicionários para cada postId
+grouped_comments = df_comments_subset.groupby('postId').apply(
+    lambda x: x[['message', 'user']].to_dict('records')
+).reset_index(name='Comentários')
+
+def extract_comment_and_username(comment_list):
+    # Para cada comentário, extrai o texto e o username do dicionário 'user'
+    result = []
+    for item in comment_list:
+        message = item.get('message')
+        user = item.get('user')
+        # user pode ser dict ou string; tenta converter se necessário
+        if isinstance(user, str):
+            try:
+                user = literal_eval(user)
+            except Exception:
+                user = {}
+        username = user.get('username') if isinstance(user, dict) else None
+        result.append({'message': message, 'user': username})
+    return result
 
 for df in df_list:
-    df['postid'] = df['Link'].str.extract(r'/([^/]+)/?$')
-    df['Comentários'] = df_comments['Comentários']
+    df['postId'] = df['Link'].str.extract(r'/([^/]+)/?$')
+    df = df.merge(grouped_comments, on='postId')
+    df = df.drop(columns=['Comentários_x', 'Comentários', 'postid', 'level_0', 'index'], errors='ignore').rename(columns={'Comentários_y': 'Comentários'})
+    df['Comentários'] = df['Comentários'].apply(extract_comment_and_username)
 
+    
 df1.to_excel('C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data/processed/final_sample.xlsx', index=False)
 df2.to_excel('C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data/processed/final_sample_4468.xlsx', index=False)
