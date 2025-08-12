@@ -1,11 +1,13 @@
 import pandas as pd
 import re
 from ast import literal_eval
-
+from LeIA import SentimentIntensityAnalyzer
 profile_to_estado = {
     'Estado do Paraná': 'Paraná',
     'Governo SP': 'São Paulo',
 }
+
+analyzer = SentimentIntensityAnalyzer()
 
 def classify_3(text: str) -> str:
     text_lower = str(text).lower()
@@ -125,13 +127,30 @@ def check_gov_comment(comments, arroba_governo):
     """
     Retorna 1 se algum dicionário da lista comments tem 'user' igual ao arroba_governo, senão 0.
     """
-    print(comments, arroba_governo)
     if not isinstance(comments, list) or pd.isna(arroba_governo):
         return 0
     for comment in comments:
         if isinstance(comment, dict) and comment.get('user') == arroba_governo:
             return 1
     return 0
+
+def sentimento_media_sem_neutros(lista_comentarios):
+    # Se não for lista, retorna 0
+    if not isinstance(lista_comentarios, list) or len(lista_comentarios) == 0:
+        return 0
+    print(lista_comentarios)
+    compounds = []
+    for comentario in lista_comentarios:
+        # Pega o texto do comentário (pode ser 'comment' ou 'message')
+        texto = comentario.get('message')
+        if texto:
+            score = analyzer.polarity_scores(str(texto))['compound']
+            if abs(score) > 0.05:  # exclui neutros
+                compounds.append(score)
+    if not compounds:  # se não sobrou nada, retorna neutro (0)
+        return 0
+    media = sum(compounds) / len(compounds)
+    return 1 if media > 0 else 0
 
 if __name__ == "__main__":
     # leitura dos dataframes
@@ -187,3 +206,7 @@ if __name__ == "__main__":
     # variável 8 - interação dialógica
     df1['gov_commented'] = df1.apply(lambda row: check_gov_comment(row['Comentários'], row['Arroba-Governo']), axis=1)
     df2['gov_commented'] = df2.apply(lambda row: check_gov_comment(row['Comentários'], row['Arroba-Governo']), axis=1)
+
+    # variável 9 - análise de sentimento
+    df1['mean_comment_sentiment'] = literal_eval(df1['Comentários']).apply(sentimento_media_sem_neutros)
+    df2['mean_comment_sentiment'] = literal_eval(df2['Comentários']).apply(sentimento_media_sem_neutros)
