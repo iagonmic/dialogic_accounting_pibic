@@ -1,5 +1,11 @@
 import pandas as pd
 import re
+from ast import literal_eval
+
+profile_to_estado = {
+    'Estado do Paraná': 'Paraná',
+    'Governo SP': 'São Paulo',
+}
 
 def classify_3(text: str) -> str:
     text_lower = str(text).lower()
@@ -115,35 +121,69 @@ def has_call_to_action(text):
             return 1
     return 0
 
+def check_gov_comment(comments, arroba_governo):
+    """
+    Retorna 1 se algum dicionário da lista comments tem 'user' igual ao arroba_governo, senão 0.
+    """
+    print(comments, arroba_governo)
+    if not isinstance(comments, list) or pd.isna(arroba_governo):
+        return 0
+    for comment in comments:
+        if isinstance(comment, dict) and comment.get('user') == arroba_governo:
+            return 1
+    return 0
+
 if __name__ == "__main__":
     # leitura dos dataframes
     data_path = 'C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data'
     df1 = pd.read_excel(data_path + '/results/01_final_sample_4468_engajamento.xlsx')
     df2 = pd.read_excel(data_path + '/results/01_final_sample_4024_engajamento.xlsx')
+    df_link = pd.read_excel(data_path + '/links.xlsx')
 
-    df_list = [df1, df2]
+    df1['Profile'] = df1['Profile'].str.replace(r'^Governo (do|de|da) ', '', regex=True)
+    df2['Profile'] = df2['Profile'].str.replace(r'^Governo (do|de|da) ', '', regex=True)
 
-    for df in df_list:
-        # variável 1 - detalhamento do conteúdo
-        df['classify_3'] = df['Message'].apply(classify_3)
-        df['classify_5_inverted'] = df['Message'].apply(classify_5_inverted)
+    df_link['Arroba-Governo'] = df_link['INSTAGRAM'].str.extract(r'/([^/]+)/?$')
 
-        # variável 2 - tipo de conteúdo
-        df['content_type'] = df['Link'].apply(content_type_classification)
+    df1['Profile'] = df1['Profile'].replace(profile_to_estado)
+    df2['Profile'] = df2['Profile'].replace(profile_to_estado)
 
-        # variável 3 - frequência de posts
-        df = post_frequency(df)
+    # Faz o merge usando o nome do estado extraído de Profile e o nome do estado do df_link
+    df1 = df1.merge(df_link.filter(['NOME DO ESTADO', 'Arroba-Governo']), left_on='Profile', right_on='NOME DO ESTADO', how='left').drop(columns=['NOME DO ESTADO'], errors='ignore')
+    df2 = df2.merge(df_link.filter(['NOME DO ESTADO', 'Arroba-Governo']), left_on='Profile', right_on='NOME DO ESTADO', how='left').drop(columns=['NOME DO ESTADO'], errors='ignore')
 
-        # variável 4 - período do dia
-        df['period_of_day'] = df['Date'].apply(period_of_day)
+    #### Atenção, aqui houve uma diminuição dos estados, não houve coleta de dados o suficiente para todos
 
-        # variável 5 - quantidade de hashtags
-        df['num_hashtags'] = df['Message'].apply(count_hashtags)
+    # variável 1 - detalhamento do conteúdo
+    df1['classify_3'] = df1['Message'].apply(classify_3)
+    df1['classify_5_inverted'] = df1['Message'].apply(classify_5_inverted)
+    df2['classify_3'] = df2['Message'].apply(classify_3)
+    df2['classify_5_inverted'] = df2['Message'].apply(classify_5_inverted)
 
-        # variável 6 - índice de Flesch
-        df['flesch_index'] = df['Message'].apply(flesch_index)
+    # variável 2 - tipo de conteúdo
+    df1['content_type'] = df1['Link'].apply(content_type_classification)
+    df2['content_type'] = df2['Link'].apply(content_type_classification)
 
-        # variável 7 - chamada para ação
-        df['call_to_action'] = df['Message'].apply(has_call_to_action)
+    # variável 3 - frequência de posts
+    df1 = post_frequency(df1)
+    df2 = post_frequency(df2)
 
-        # variável 8 - 
+    # variável 4 - período do dia
+    df1['period_of_day'] = df1['Date'].apply(period_of_day)
+    df2['period_of_day'] = df2['Date'].apply(period_of_day)
+
+    # variável 5 - quantidade de hashtags
+    df1['num_hashtags'] = df1['Message'].apply(count_hashtags)
+    df2['num_hashtags'] = df2['Message'].apply(count_hashtags)
+
+    # variável 6 - índice de Flesch
+    df1['flesch_index'] = df1['Message'].apply(flesch_index)
+    df2['flesch_index'] = df2['Message'].apply(flesch_index)
+
+    # variável 7 - chamada para ação
+    df1['call_to_action'] = df1['Message'].apply(has_call_to_action)
+    df2['call_to_action'] = df2['Message'].apply(has_call_to_action)
+
+    # variável 8 - interação dialógica
+    df1['gov_commented'] = df1.apply(lambda row: check_gov_comment(row['Comentários'], row['Arroba-Governo']), axis=1)
+    df2['gov_commented'] = df2.apply(lambda row: check_gov_comment(row['Comentários'], row['Arroba-Governo']), axis=1)
