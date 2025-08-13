@@ -54,8 +54,8 @@ def content_type_classification(url: str) -> str:
     
 def post_frequency(df):
     # Conta posts por dia por perfil
-    posts_per_year = df1.groupby(['Profile']).size().reset_index(name='posts_per_year')
-    posts_per_year['posts_per_year'] = posts_per_year['posts_per_year'] / 365
+    posts_per_year = df1.groupby(['Profile']).size().reset_index(name='posts_per_day')
+    posts_per_year['posts_per_day'] = posts_per_year['posts_per_day'] / 365
     df = df.merge(posts_per_year, on='Profile', how='left')
     return df
         
@@ -138,7 +138,6 @@ def sentimento_media_sem_neutros(lista_comentarios):
     # Se não for lista, retorna 0
     if not isinstance(lista_comentarios, list) or len(lista_comentarios) == 0:
         return 0
-    print(lista_comentarios)
     compounds = []
     for comentario in lista_comentarios:
         # Pega o texto do comentário (pode ser 'comment' ou 'message')
@@ -152,12 +151,25 @@ def sentimento_media_sem_neutros(lista_comentarios):
     media = sum(compounds) / len(compounds)
     return 1 if media > 0 else 0
 
+def safe_literal_eval(x):
+    if isinstance(x, str) and x.strip().startswith('['):
+        try:
+            return literal_eval(x)
+        except Exception:
+            return []
+    elif isinstance(x, float) and pd.isna(x):
+        return []
+    return x
+
 if __name__ == "__main__":
     # leitura dos dataframes
     data_path = 'C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data'
     df1 = pd.read_excel(data_path + '/results/01_final_sample_4468_engajamento.xlsx')
     df2 = pd.read_excel(data_path + '/results/01_final_sample_4024_engajamento.xlsx')
     df_link = pd.read_excel(data_path + '/links.xlsx')
+
+    df1['Comentários'] = df1['Comentários'].apply(safe_literal_eval)
+    df2['Comentários'] = df2['Comentários'].apply(safe_literal_eval)
 
     df1['Profile'] = df1['Profile'].str.replace(r'^Governo (do|de|da) ', '', regex=True)
     df2['Profile'] = df2['Profile'].str.replace(r'^Governo (do|de|da) ', '', regex=True)
@@ -208,5 +220,8 @@ if __name__ == "__main__":
     df2['gov_commented'] = df2.apply(lambda row: check_gov_comment(row['Comentários'], row['Arroba-Governo']), axis=1)
 
     # variável 9 - análise de sentimento
-    df1['mean_comment_sentiment'] = literal_eval(df1['Comentários']).apply(sentimento_media_sem_neutros)
-    df2['mean_comment_sentiment'] = literal_eval(df2['Comentários']).apply(sentimento_media_sem_neutros)
+    df1['mean_comment_sentiment'] = df1['Comentários'].apply(sentimento_media_sem_neutros)
+    df2['mean_comment_sentiment'] = df2['Comentários'].apply(sentimento_media_sem_neutros)
+
+df1.to_excel(data_path + '/results/2_independent_variable_4468.xlsx', index=False)
+df2.to_excel(data_path + '/results/2_independent_variable_4024.xlsx', index=False)
