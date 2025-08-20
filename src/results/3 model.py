@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.diagnostic import het_breuschpagan
 from scipy.stats import shapiro
+from statsmodels.graphics.tsaplots import plot_acf
 
 data_path = 'C:/Users/Usuario/Desktop/data-science/dialogic_accounting_pibic/data'
 
@@ -23,7 +24,8 @@ variaveis_independentes = [
 ]
 
 # Carrega o dataframe
-df1 = pd.read_excel(data_path + '/results/2_independent_variable_4024.xlsx')
+df1 = pd.read_excel(data_path + '/results/2_independent_variable_4468.xlsx')
+df2 = pd.read_excel(data_path + '/results/2_independent_variable_4468.xlsx')
 
 # Removendo 314 linhas com valores NaN em iengajamento
 df1 = df1.dropna(subset=['IEngajamento'])
@@ -35,6 +37,7 @@ X = df1[variaveis_independentes]
 
 # Converte variáveis categóricas em dummies
 X = pd.get_dummies(X, drop_first=True)
+X = X.astype(float)  # Garante que todas as colunas são float
 
 # Normaliza variáveis para facilitar interpretação
 scaler = StandardScaler()
@@ -59,9 +62,11 @@ print(vif)
 # =====================
 # 2. Regressão múltipla
 # =====================
-modelo = sm.OLS(y_scaled, X_const).fit()
-print("\n=== RESUMO MODELO MÚLTIPLO ===")
-print(modelo.summary())
+ols = sm.OLS(y_scaled, X_const).fit()
+ols_hac = sm.OLS(df1['IEngajamento'], X).fit(cov_type='HAC', cov_kwds={'maxlags':7})
+print("\n=== RESUMO ols MÚLTIPLO ===")
+print(ols.summary())
+print(ols_hac.summary())
 
 # =====================
 # 3. Regressões simples
@@ -69,14 +74,14 @@ print(modelo.summary())
 print("\n=== REGRESSÕES SIMPLES (uma variável por vez) ===")
 for var in X.columns:
     X_single = sm.add_constant(X_scaled[[var]])
-    modelo_single = sm.OLS(y_scaled, X_single).fit()
-    print(f"\nModelo com {var}:")
-    print(modelo_single.summary())
+    ols_single = sm.OLS(y_scaled, X_single).fit()
+    print(f"\nols com {var}:")
+    print(ols_single.summary())
 
 # =====================
 # 4. Normalidade dos resíduos
 # =====================
-residuos = modelo.resid
+residuos = ols.resid
 stat, p = shapiro(residuos)
 print("\n=== TESTE DE NORMALIDADE (Shapiro-Wilk) ===")
 print(f"Estatística={stat:.4f}, p-valor={p:.4f}")
@@ -87,7 +92,7 @@ plt.show()
 # =====================
 # 5. Heterocedasticidade
 # =====================
-bp_test = het_breuschpagan(residuos, modelo.model.exog)
+bp_test = het_breuschpagan(residuos, ols.model.exog)
 labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
 bp_results = dict(zip(labels, bp_test))
 print("\n=== TESTE DE HETEROCEDASTICIDADE (Breusch-Pagan) ===")
@@ -97,7 +102,7 @@ for k, v in bp_results.items():
 # =====================
 # 6. Resíduos vs Ajustados
 # =====================
-ajustados = modelo.fittedvalues
+ajustados = ols.fittedvalues
 plt.scatter(ajustados, residuos)
 plt.axhline(0, color='red', linestyle='--')
 plt.xlabel('Valores Ajustados')
@@ -108,7 +113,7 @@ plt.show()
 # =====================
 # 7. Observações influentes (Cook's Distance)
 # =====================
-influence = modelo.get_influence()
+influence = ols.get_influence()
 cooks_d = influence.cooks_distance[0]
 
 plt.stem(np.arange(len(cooks_d)), cooks_d, markerfmt=",")
@@ -124,8 +129,23 @@ print(f"Limite Cook's D: {limite:.4f}")
 print(f"Índices influentes: {outliers}")
 
 # =====================
-# 8. Modelo com erros robustos (opcional)
+# 8. ols com erros robustos (opcional)
 # =====================
-modelo_robusto = modelo.get_robustcov_results(cov_type='HC3')
-print("\n=== RESUMO MODELO ROBUSTO (HC3) ===")
-print(modelo_robusto.summary())
+ols_robusto = ols.get_robustcov_results(cov_type='HC3')
+print("\n=== RESUMO ols ROBUSTO (HC3) ===")
+print(ols_robusto.summary())
+
+# Resíduos
+plt.figure(figsize=(12,5))
+plt.plot(ols.resid, label="Resíduos OLS normal", alpha=0.7)
+plt.plot(ols_hac.resid, label="Resíduos OLS HAC", alpha=0.7, linestyle="--")
+plt.axhline(0, color="black", linewidth=1)
+plt.title("Resíduos da Regressão")
+plt.legend()
+plt.show()
+
+# Autocorrelação dos resíduos
+plt.figure(figsize=(8,5))
+plot_acf(ols.resid, lags=30)
+plt.title("Autocorrelação dos resíduos (OLS normal)")
+plt.show()
