@@ -24,16 +24,15 @@ variaveis_independentes = [
 ]
 
 # Carrega o dataframe
-df1 = pd.read_excel(data_path + '/results/2_independent_variable_4468.xlsx')
-df2 = pd.read_excel(data_path + '/results/2_independent_variable_4468.xlsx')
+df = pd.read_excel(data_path + '/results/2_independent_variable_4024.xlsx')
 
 # Removendo 314 linhas com valores NaN em iengajamento
-df1 = df1.dropna(subset=['IEngajamento'])
+df = df.dropna(subset=['IEngajamento'])
 
 # Variável dependente
-y = df1['IEngajamento']
+y = df['IEngajamento']
 # Variáveis independentes
-X = df1[variaveis_independentes]
+X = df[variaveis_independentes]
 
 # Converte variáveis categóricas em dummies
 X = pd.get_dummies(X, drop_first=True)
@@ -63,7 +62,7 @@ print(vif)
 # 2. Regressão múltipla
 # =====================
 ols = sm.OLS(y_scaled, X_const).fit()
-ols_hac = sm.OLS(df1['IEngajamento'], X).fit(cov_type='HAC', cov_kwds={'maxlags':7})
+ols_hac = sm.OLS(df['IEngajamento'], X).fit(cov_type='HAC', cov_kwds={'maxlags':7})
 print("\n=== RESUMO ols MÚLTIPLO ===")
 print(ols.summary())
 print(ols_hac.summary())
@@ -149,3 +148,4 @@ plt.figure(figsize=(8,5))
 plot_acf(ols.resid, lags=30)
 plt.title("Autocorrelação dos resíduos (OLS normal)")
 plt.show()
+
