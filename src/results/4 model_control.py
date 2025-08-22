@@ -20,7 +20,9 @@ variaveis_independentes = [
     'flesch_index',
     'call_to_action',
     'gov_commented',
-    'mean_comment_sentiment'
+    'mean_comment_sentiment',
+    'regiao',
+    'PIB_regiao'
 ]
 
 # Carrega o dataframe
@@ -118,8 +120,10 @@ df["regiao_nome"] = df[["Profile"]].apply(lambda row: mapa_regiao.get(row["Profi
 for regiao in df["regiao_nome"].dropna().unique():
     subset = df[df["regiao_nome"] == regiao]
     Y_sub = subset["IEngajamento"].dropna()
-    X_sub = subset.drop(columns=["IEngajamento", "Profile", "regiao_nome"] + regiao_cols).loc[Y_sub.index]
+    X_sub = subset[variaveis_independentes]
+    X_sub = pd.get_dummies(X_sub, drop_first=True)
     X_sub = sm.add_constant(X_sub)
+    X_sub = X_sub.astype(float)  # Garante que todas as colunas são float
     modelo = sm.OLS(Y_sub, X_sub).fit(cov_type="HAC", cov_kwds={"maxlags":5})
     resultados_regiao[regiao] = modelo
     print(f"\n=== Região {regiao} ===")
