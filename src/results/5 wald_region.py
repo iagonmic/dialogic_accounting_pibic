@@ -44,6 +44,72 @@ variaveis_independentes = [
     'PIB_regiao'
 ]
 
+# ==========================
+# Mapeamento Profile -> Região
+# ==========================
+mapa_regiao = {
+    "Acre": "Norte",
+    "Amazonas": "Norte",
+    "Amapá": "Norte",
+    "Pará": "Norte",
+    "Rondônia": "Norte",
+    "Roraima": "Norte",
+    "Tocantins": "Norte",
+    "Alagoas": "Nordeste",
+    "Bahia": "Nordeste",
+    "Ceará": "Nordeste",
+    "Maranhão": "Nordeste",
+    "Paraíba": "Nordeste",
+    "Pernambuco": "Nordeste",
+    "Piauí": "Nordeste",
+    "Rio Grande do Norte": "Nordeste",
+    "Sergipe": "Nordeste",
+    "Distrito Federal": "Centro-Oeste",
+    "Goiás": "Centro-Oeste",
+    "Mato Grosso": "Centro-Oeste",
+    "Mato Grosso do Sul": "Centro-Oeste",
+    "Espírito Santo": "Sudeste",
+    "Minas Gerais": "Sudeste",
+    "Rio de Janeiro": "Sudeste",
+    "São Paulo": "Sudeste",
+    "Paraná": "Sul",
+    "Rio Grande do Sul": "Sul",
+    "Santa Catarina": "Sul"
+}
+
+# ==========================
+# PIB por região
+# ==========================
+df_pib_norte = pd.read_excel(data_path + '/IBGE_PIB/Tabela1.xls', sheet_name='Tabela1.1')
+valor_norte = df_pib_norte.loc[55, 'Unnamed: 3']
+
+df_pib_nordeste = pd.read_excel(data_path + '/IBGE_PIB/Tabela9.xls', sheet_name='Tabela9.1')
+valor_nordeste = df_pib_nordeste.loc[55, 'Unnamed: 3']
+
+df_pib_sudeste = pd.read_excel(data_path + '/IBGE_PIB/Tabela19.xls', sheet_name='Tabela19.1')
+valor_sudeste = df_pib_sudeste.loc[55, 'Unnamed: 3']
+
+df_pib_sul = pd.read_excel(data_path + '/IBGE_PIB/Tabela24.xls', sheet_name='Tabela24.1')
+valor_sul = df_pib_sul.loc[55, 'Unnamed: 3']
+
+df_pib_centrooeste = pd.read_excel(data_path + '/IBGE_PIB/Tabela28.xls', sheet_name='Tabela28.1')
+valor_centrooeste = df_pib_centrooeste.loc[55, 'Unnamed: 3']
+
+pib_regiao = {
+    'Norte': valor_norte,
+    'Nordeste': valor_nordeste,
+    'Sudeste': valor_sudeste,
+    'Sul': valor_sul,
+    'Centro-Oeste': valor_centrooeste
+}
+
+# ==========================
+# Adiciona colunas de região e PIB ao DataFrame
+# ==========================
+df["regiao"] = df["Profile"].map(mapa_regiao)
+df["PIB_regiao"] = df["regiao"].map(pib_regiao)
+
+
 Y = df['IEngajamento']
 
 X_orig = df[variaveis_originais]
@@ -67,7 +133,7 @@ print(f"AIC: {modelo_orig.aic}, BIC: {modelo_orig.bic}")
 # 2. Modelo com PIB e região (já rodado antes)
 # ==========================
 # X com controles já foi criado anteriormente como X
-ols = sm.OLS(Y, X_orig).fit(cov_type="HAC", cov_kwds={"maxlags":7})
+ols = sm.OLS(Y, X).fit(cov_type="HAC", cov_kwds={"maxlags":7})
 print("\n=== Modelo com PIB e região ===")
 print(ols.summary())
 print(f"AIC: {ols.aic}, BIC: {ols.bic}")
@@ -75,7 +141,7 @@ print(f"AIC: {ols.aic}, BIC: {ols.bic}")
 # ==========================
 # 3. Wald Test para dummies de região
 # ==========================
-regiao_dummies = [col for col in X_orig.columns if col.startswith("regi")]
+regiao_dummies = [col for col in X.columns if col.startswith("regiao")]
 if len(regiao_dummies) > 0:
     # Cria a string de hipóteses: cada dummy = 0
     hypotheses = " = 0, ".join(regiao_dummies) + " = 0"
