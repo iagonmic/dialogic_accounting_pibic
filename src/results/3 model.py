@@ -62,7 +62,7 @@ print(vif)
 # 2. Regressão múltipla
 # =====================
 ols = sm.OLS(y_scaled, X_const).fit()
-ols_hac = sm.OLS(df['IEngajamento'], X).fit(cov_type='HAC', cov_kwds={'maxlags':7})
+ols_hac = sm.OLS(y, X).fit(cov_type='HAC', cov_kwds={'maxlags':7})
 print("\n=== RESUMO ols MÚLTIPLO ===")
 print(ols.summary())
 print(ols_hac.summary())
